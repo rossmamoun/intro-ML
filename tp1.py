@@ -1,10 +1,10 @@
 # Importer les bibliothèques nécessaires
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.datasets import mnist
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 import os
 from time import time
 
@@ -29,6 +29,10 @@ if not os.path.exists(log_dir):
 # Initialiser le callback TensorBoard
 tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1, write_graph=True, write_images=True)
 
+# Initialiser le callback ModelCheckpoint
+checkpoint_filepath = 'best_model.keras'
+checkpoint = ModelCheckpoint(filepath=checkpoint_filepath, monitor='val_accuracy', save_best_only=True, mode='max')
+
 # Construction du modèle avec Dropout et régularisation L2
 model = Sequential()
 model.add(Dense(200, activation='relu', input_shape=(784,)))
@@ -40,8 +44,8 @@ model.add(Dense(10, activation='softmax'))
 # Compilation du modèle avec Adam
 model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Entraînement du modèle avec TensorBoard callback
-model.fit(x_train, y_train, epochs=12, verbose=1, validation_data=(x_test, y_test), callbacks=[tensorboard])
+# Entraînement du modèle avec TensorBoard et ModelCheckpoint callbacks
+model.fit(x_train, y_train, epochs=12, verbose=1, validation_data=(x_test, y_test), callbacks=[tensorboard, checkpoint])
 
 # Évaluation sur l'ensemble de test
 score = model.evaluate(x_test, y_test, verbose=0)
@@ -51,4 +55,14 @@ print('Test accuracy:', score[1])
 # Afficher le résumé du modèle
 model.summary()
 
+# Charger le modèle sauvegardé
+best_model = load_model('best_model.keras')
 
+# Évaluation sur l'ensemble de test
+score = best_model.evaluate(x_test, y_test, verbose=0)
+print('Test score:', score[0])
+print('Test accuracy:', score[1])
+
+# Faire des prédictions sur l'ensemble de test
+predictions = best_model.predict(x_test)
+print(predictions)
